@@ -1,0 +1,483 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="origin" />
+    <meta property="og:description" content="一、poll介绍 poll本质上和select没有区别，只是没有了最大连接数(linux上默认1024个)的限制，原因是它基于链表存储的。 本人的另一篇博客讲了 python select :&amp;#16" />
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <title>Python poll IO多路复用 - 短毛兔 - 博客园</title>
+    
+    <link rel="stylesheet" href="/css/blog-common.min.css?v=HrvK75b61-WJQPXtn_liCIWUC4EcnwT_lmrRbncieJo" />
+    <link id="MainCss" rel="stylesheet" href="/skins/darkgreentrip/bundle-darkgreentrip.min.css?v=4KE41eS1YQSSwl64fGzzTUj6ijs-YQFat4AaN-g_jxc" />
+    
+    <link id="mobile-style" media="only screen and (max-width: 767px)" type="text/css" rel="stylesheet" href="/skins/darkgreentrip/bundle-darkgreentrip-mobile.min.css?v=14y836ONdWu0_jxwS0i0t1S3KjlMl55rzUI5k1qhIdc" />
+    
+    <link type="application/rss+xml" rel="alternate" href="https://www.cnblogs.com/weihengblog/rss" />
+    <link type="application/rsd+xml" rel="EditURI" href="https://www.cnblogs.com/weihengblog/rsd.xml" />
+    <link type="application/wlwmanifest+xml" rel="wlwmanifest" href="https://www.cnblogs.com/weihengblog/wlwmanifest.xml" />
+    <script src="https://common.cnblogs.com/scripts/jquery-2.2.0.min.js"></script>
+    <script src="/js/blog-common.min.js?v=W8J2DYaUeAZPX2Lx1iRh00kAY9PXrT8UdrrPQB3gEXU"></script>
+    <script>
+        var currentBlogId = 407721;
+        var currentBlogApp = 'weihengblog';
+        var cb_enable_mathjax = false;
+        var isLogined = false;
+    </script>
+    
+    
+    
+</head>
+<body>
+    <a name="top"></a>
+    
+    
+<!--done-->
+<div id="home">
+<div id="header">
+	<div id="blogTitle">
+        <a id="lnkBlogLogo" href="https://www.cnblogs.com/weihengblog/"><img id="blogLogo" src="/skins/custom/images/logo.gif" alt="返回主页" /></a>		
+		
+<!--done-->
+<h1><a id="Header1_HeaderTitle" class="headermaintitle HeaderMainTitle" href="https://www.cnblogs.com/weihengblog/">短毛兔</a>
+</h1>
+<h2>
+
+</h2>
+
+
+
+
+		
+	</div><!--end: blogTitle 博客的标题和副标题 -->
+	<div id="navigator">
+		
+<ul id="navList">
+<li><a id="blog_nav_sitehome" class="menu" href="https://www.cnblogs.com/">
+博客园</a>
+</li>
+<li>
+<a id="blog_nav_myhome" class="menu" href="https://www.cnblogs.com/weihengblog/">
+首页</a>
+</li>
+<li>
+
+<a id="blog_nav_newpost" class="menu" href="https://i.cnblogs.com/EditPosts.aspx?opt=1">
+新随笔</a>
+</li>
+<li>
+<a id="blog_nav_contact" class="menu" href="https://msg.cnblogs.com/send/%E7%9F%AD%E6%AF%9B%E5%85%94">
+联系</a></li>
+<li>
+<a id="blog_nav_rss" class="menu" href="https://www.cnblogs.com/weihengblog/rss/">
+订阅</a>
+<!--<partial name="./Shared/_XmlLink.cshtml" model="Model" /></li>--></li>
+<li>
+<a id="blog_nav_admin" class="menu" href="https://i.cnblogs.com/">
+管理</a>
+</li>
+</ul>
+
+
+		<div class="blogStats">
+			
+			<span id="stats_post_count">随笔 - 
+151&nbsp; </span>
+<span id="stats_article_count">文章 - 
+1&nbsp; </span>
+<span id="stats-comment_count">评论 - 
+13</span>
+
+			
+		</div><!--end: blogStats -->
+	</div><!--end: navigator 博客导航栏 -->
+</div><!--end: header 头部 -->
+
+<div id="main">
+	<div id="mainContent">
+	<div class="forFlow">
+		<div id="post_detail">
+    <!--done-->
+    <div id="topics">
+        <div class="post">
+            <h1 class = "postTitle">
+                
+<a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/weihengblog/p/9830361.html">Python poll IO多路复用</a>
+
+            </h1>
+            <div class="clear"></div>
+            <div class="postBody">
+                
+<div id="cnblogs_post_body" class="blogpost-body ">
+    <h2>一、poll介绍</h2>
+<p>poll本质上和select没有区别，只是没有了最大连接数(linux上默认1024个)的限制，原因是它基于链表存储的。</p>
+<p>本人的另一篇博客讲了 python&nbsp; select :&nbsp;https://www.cnblogs.com/weihengblog/p/9830253.html</p>
+<h2>二、使用poll编写SocketServer（本博客代码需要在linux下运行）</h2>
+<p><span style="font-size: 18px;">首先我们建立一个服务器端的socket</span></p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">import</span><span style="color: #000000;"> select
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> socket
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> sys
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> queue
+</span><span style="color: #0000ff;">from</span> queue <span style="color: #0000ff;">import</span><span style="color: #000000;"> Queue
+
+
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 创建一个socket连接</span>
+server =<span style="color: #000000;"> socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setblocking(False)
+
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 绑定IP地址和端口号</span>
+server_address = (<span style="color: #800000;">'</span><span style="color: #800000;">localhost</span><span style="color: #800000;">'</span>, 8800<span style="color: #000000;">)
+server.bind(server_address)
+</span><span style="color: #0000ff;">print</span>(<span style="color: #800000;">"</span><span style="color: #800000;">服务器已启动http://localhost:8800/</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 监听连接数</span>
+server.listen(5<span style="color: #000000;">)
+
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 消息队列 用于记录客户端发来的消息</span>
+message_queues = {}</pre>
+</div>
+<p><span style="font-size: 18px;">设置轮询的超时时间</span></p>
+<p><span style="font-size: 14px;">如果不设置timeout，方法将会阻塞直到对应的poll对象有一个事件发生。</span></p>
+<div class="cnblogs_code">
+<pre>TIMEOUT = 1000 <span style="color: #008000;">#</span><span style="color: #008000;"> 设置为1秒</span></pre>
+</div>
+<p><span style="font-size: 18px;">poll的事件类型</span></p>
+<div class="cnblogs_code">
+<pre><span style="color: #000000;">POLLIN    Input ready                  有数据读取
+POLLPRI    Priority input ready        有紧急数据读取
+POLLOUT    Able to receive output      准备输出
+POLLERR    Error                       某些错误
+POLLHUP    Channel closed              挂起
+POLLNVAL    Channel </span><span style="color: #0000ff;">not</span> open           无效请求，描述符无法打开<br /><br /></pre>
+<pre><span class="n">READ_ONLY <span class="o">= <span class="n">select<span class="o">.<span class="n">POLLIN <span class="o">| <span class="n">select<span class="o">.<span class="n">POLLPRI <span class="o">| <span class="n">select<span class="o">.<span class="n">POLLHUP <span class="o">| <span class="n">select<span class="o">.<span class="n">POLLERR
+<span class="n">READ_WRITE <span class="o">= <span class="n">READ_ONLY <span class="o">| <span class="n">select<span class="o">.<span class="n">POLLOUT</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></pre>
+</div>
+<p><span style="font-size: 18px;">注册要监听文件描述符</span></p>
+<p>首先需要实例化一个poll对象，对要监听的句柄进行注册</p>
+<div class="cnblogs_code">
+<pre>poller =<span style="color: #000000;"> select.poll()
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 注册server端socket  要监听的事件类型为 读</span>
+poller.register(server, READ_ONLY)</pre>
+</div>
+<p><span style="font-size: 18px;">文件描述符映射具体的套接字对象</span></p>
+<div class="cnblogs_code">
+<pre><span style="color: #800000;">"""</span><span style="color: #800000;">
+由于poll()返回包含套接字文件描述符和事件标志的元组列表，因此需要从文件描述符号到对象的映射才能从套接字中读取或写入该套接字。
+</span><span style="color: #800000;">"""</span><span style="color: #000000;">
+fd_to_socket </span>= { server.fileno(): server,}</pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 18px;">事件轮询</span></p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">while</span><span style="color: #000000;"> True:
+
+    </span><span style="color: #800000;">"""</span><span style="color: #800000;">
+    去检测已经注册的文件描述符，会返回一个(fd,event)元祖列表
+    fd:文件描述符
+    event:描述符可能会发生的事件
+    如果返回为空的列表，则说明超时且没有文件描述符有事件发生
+    </span><span style="color: #800000;">"""</span><span style="color: #000000;">
+    events </span>= poller.poll(TIMEOUT) <span style="color: #008000;">#</span><span style="color: #008000;"> 如果timeout为None，将会阻塞，知道有事件发生</span>
+    <span style="color: #0000ff;">for</span> fd, flag <span style="color: #0000ff;">in</span><span style="color: #000000;"> events:
+        </span><span style="color: #008000;">#</span><span style="color: #008000;"> 从文件描述符中检索实际的套接字</span>
+        s = fd_to_socket[fd]</pre>
+</div>
+<p><span style="font-size: 18px;">事件类型判断</span></p>
+<div class="cnblogs_code">
+<pre>        <span style="color: #0000ff;">if</span> flag &amp; (select.POLLIN | select.POLLPRI): <span style="color: #008000;">#</span><span style="color: #008000;"> 有数据可以读取</span>
+
+            <span style="color: #0000ff;">if</span> s <span style="color: #0000ff;">is</span> server: <span style="color: #008000;">#</span><span style="color: #008000;"> 表示有新的连接</span>
+                <span style="color: #008000;">#</span><span style="color: #008000;"> 可以读取数据</span>
+                connection, client_address =<span style="color: #000000;"> s.accept()
+                </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">新的连接来自:</span><span style="color: #800000;">'</span><span style="color: #000000;">, client_address)
+                connection.setblocking(0)
+                fd_to_socket[connection.fileno()] </span>= connection <span style="color: #008000;">#</span><span style="color: #008000;"> 往fd字典中添加一个新的 文件描述符</span>
+<span style="color: #000000;">                poller.register(connection, READ_ONLY)
+
+                message_queues[connection] </span>= Queue() <span style="color: #008000;">#</span><span style="color: #008000;"> 为了防止等待客户端发来数据期间发生阻塞，分配一个队列用于保存数据</span>
+            <span style="color: #0000ff;">else</span>: <span style="color: #008000;">#</span><span style="color: #008000;"> 表示客户端传来了消息</span>
+<span style="color: #000000;">
+                data </span>= s.recv(1024<span style="color: #000000;">)
+                </span><span style="color: #0000ff;">if</span> data: <span style="color: #008000;">#</span><span style="color: #008000;"> 表明数据接受成功</span>
+
+                    <span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">接受数据 "%s" 来自 %s</span><span style="color: #800000;">'</span> %<span style="color: #000000;"> (data, s.getpeername()))
+                    message_queues[s].put(data)
+                    </span><span style="color: #008000;">#</span><span style="color: #008000;"> 修改一个已经存在的fd，修改事件为写。这里表示服务器向客户端要发送数据</span>
+<span style="color: #000000;">                    poller.modify(s, READ_WRITE)
+                </span><span style="color: #0000ff;">else</span><span style="color: #000000;">:
+                    </span><span style="color: #008000;">#</span><span style="color: #008000;"> 如果没有接受到数据，表示要断开连接</span>
+                    <span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">关闭</span><span style="color: #800000;">'</span>, client_address, <span style="color: #800000;">'</span><span style="color: #800000;">并未读取到数据</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+                    </span><span style="color: #008000;">#</span><span style="color: #008000;"> 停止监听连接上的输入</span>
+<span style="color: #000000;">                    poller.unregister(s)
+                    s.close()
+
+                    </span><span style="color: #008000;">#</span><span style="color: #008000;"> 将此链接从队列中删除</span>
+                    <span style="color: #0000ff;">del</span><span style="color: #000000;"> message_queues[s]
+
+        </span><span style="color: #0000ff;">elif</span> flag &amp;<span style="color: #000000;"> select.POLLHUP:
+            </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">关闭</span><span style="color: #800000;">'</span>, client_address, <span style="color: #800000;">'</span><span style="color: #800000;">收到HUP后</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+            poller.unregister(s)
+            s.close()
+
+        </span><span style="color: #0000ff;">elif</span> flag &amp;<span style="color: #000000;"> select.POLLOUT:
+            </span><span style="color: #0000ff;">try</span><span style="color: #000000;">:
+                next_msg </span>=<span style="color: #000000;"> message_queues[s].get_nowait()
+            </span><span style="color: #0000ff;">except</span><span style="color: #000000;"> queue.Empty:
+                </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">队列</span><span style="color: #800000;">'</span>, s.getpeername(), <span style="color: #800000;">'</span><span style="color: #800000;">为空</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+                poller.modify(s, READ_ONLY)
+            </span><span style="color: #0000ff;">else</span><span style="color: #000000;">:
+                </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">发送 "%s" 到 %s</span><span style="color: #800000;">'</span> %<span style="color: #000000;"> (next_msg, s.getpeername()))
+                s.send(next_msg)
+
+        </span><span style="color: #0000ff;">elif</span> flag &amp;<span style="color: #000000;"> select.POLLERR:
+            </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">异常信息:</span><span style="color: #800000;">'</span><span style="color: #000000;">, s.getpeername())
+            poller.unregister(s)
+            s.close()
+            </span><span style="color: #0000ff;">del</span> message_queues[s]</pre>
+</div>
+<h2>三、完整代码示例</h2>
+<p>server端：</p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">import</span><span style="color: #000000;"> select
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> socket
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> sys
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> queue
+</span><span style="color: #0000ff;">from</span> queue <span style="color: #0000ff;">import</span><span style="color: #000000;"> Queue
+
+
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 创建一个socket连接</span>
+server =<span style="color: #000000;"> socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setblocking(False)
+
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 绑定IP地址和端口号</span>
+server_address = (<span style="color: #800000;">'</span><span style="color: #800000;">localhost</span><span style="color: #800000;">'</span>, 8800<span style="color: #000000;">)
+server.bind(server_address)
+</span><span style="color: #0000ff;">print</span>(<span style="color: #800000;">"</span><span style="color: #800000;">服务器已启动http://localhost:8800/</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 监听连接数</span>
+server.listen(5<span style="color: #000000;">)
+
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 消息队列</span>
+message_queues =<span style="color: #000000;"> {}
+
+</span><span style="color: #800000;">"""</span><span style="color: #800000;">
+POLLIN    Input ready      有数据读取
+POLLPRI    Priority input ready   有紧急数据读取
+POLLOUT    Able to receive output  准备输出
+POLLERR    Error   某些错误
+POLLHUP    Channel closed   挂起
+POLLNVAL    Channel not open  无效请求，描述符无法打开
+</span><span style="color: #800000;">"""</span>
+<span style="color: #008000;">#</span><span style="color: #008000;"> 常用的标识  代表你想检查的事件类型</span>
+READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP |<span style="color: #000000;"> select.POLLERR
+READ_WRITE </span>= READ_ONLY |<span style="color: #000000;"> select.POLLOUT
+
+TIMEOUT </span>= 1000<span style="color: #000000;">
+poller </span>= select.poll() <span style="color: #008000;">#</span><span style="color: #008000;"> 创建一个poll对象，该对象可以注册或注销文件描述符</span>
+
+<span style="color: #008000;">#</span><span style="color: #008000;"> 注册一个文件描述符，可以通过poll()方法来检查是否有对应的IO事件发生</span><span style="color: #008000;">
+#</span><span style="color: #008000;"> 接受两个参数， fd  和  eventmask</span>
+<span style="color: #000000;">poller.register(server,READ_ONLY)
+fd_to_socket </span>=<span style="color: #000000;"> { server.fileno(): server,}
+</span><span style="color: #008000;">#</span><span style="color: #008000;"> 服务器的循环调用poll()，然后通过查找套接字并根据事件中的标志采取行动来处理返回的&ldquo;事件&rdquo;。</span>
+<span style="color: #0000ff;">while</span><span style="color: #000000;"> True:
+
+    </span><span style="color: #800000;">"""</span><span style="color: #800000;">
+    去检测已经注册的文件描述符，会返回一个(fd,event)元祖列表
+    fd:文件描述符
+    event:描述符可能会发生的事件
+    如果返回为空的列表，则说明超时且没有文件描述符有事件发生
+    </span><span style="color: #800000;">"""</span><span style="color: #000000;">
+    events </span>= poller.poll(TIMEOUT) <span style="color: #008000;">#</span><span style="color: #008000;"> 如果timeout为None，将会阻塞，知道有事件发生</span>
+    <span style="color: #0000ff;">for</span> fd, flag <span style="color: #0000ff;">in</span><span style="color: #000000;"> events:
+        </span><span style="color: #008000;">#</span><span style="color: #008000;"> 从文件描述符中检索实际的套接字</span>
+        s =<span style="color: #000000;"> fd_to_socket[fd]
+
+        </span><span style="color: #0000ff;">if</span> flag &amp; (select.POLLIN | select.POLLPRI): <span style="color: #008000;">#</span><span style="color: #008000;"> 有数据可以读取</span>
+
+            <span style="color: #0000ff;">if</span> s <span style="color: #0000ff;">is</span> server: <span style="color: #008000;">#</span><span style="color: #008000;"> 表示有新的连接</span>
+                <span style="color: #008000;">#</span><span style="color: #008000;"> 可以读取数据</span>
+                connection, client_address =<span style="color: #000000;"> s.accept()
+                </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">新的连接来自:</span><span style="color: #800000;">'</span><span style="color: #000000;">, client_address)
+                connection.setblocking(0)
+                fd_to_socket[connection.fileno()] </span>= connection <span style="color: #008000;">#</span><span style="color: #008000;"> 往fd字典中添加一个新的 文件描述符</span>
+<span style="color: #000000;">                poller.register(connection, READ_ONLY)
+
+                message_queues[connection] </span>= Queue() <span style="color: #008000;">#</span><span style="color: #008000;"> 为了防止等待客户端发来数据期间发生阻塞，分配一个队列用于保存数据</span>
+            <span style="color: #0000ff;">else</span>: <span style="color: #008000;">#</span><span style="color: #008000;"> 表示客户端传来了消息</span>
+<span style="color: #000000;">
+                data </span>= s.recv(1024<span style="color: #000000;">)
+                </span><span style="color: #0000ff;">if</span> data: <span style="color: #008000;">#</span><span style="color: #008000;"> 表明数据接受成功</span>
+
+                    <span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">接受数据 "%s" 来自 %s</span><span style="color: #800000;">'</span> %<span style="color: #000000;"> (data, s.getpeername()))
+                    message_queues[s].put(data)
+                    </span><span style="color: #008000;">#</span><span style="color: #008000;"> 修改一个已经存在的fd，修改事件为写。这里表示服务器向客户端要发送数据</span>
+<span style="color: #000000;">                    poller.modify(s, READ_WRITE)
+                </span><span style="color: #0000ff;">else</span><span style="color: #000000;">:
+                    </span><span style="color: #008000;">#</span><span style="color: #008000;"> 如果没有接受到数据，表示要断开连接</span>
+                    <span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">关闭</span><span style="color: #800000;">'</span>, client_address, <span style="color: #800000;">'</span><span style="color: #800000;">并未读取到数据</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+                    </span><span style="color: #008000;">#</span><span style="color: #008000;"> 停止监听连接上的输入</span>
+<span style="color: #000000;">                    poller.unregister(s)
+                    s.close()
+
+                    </span><span style="color: #008000;">#</span><span style="color: #008000;"> 将此链接从队列中删除</span>
+                    <span style="color: #0000ff;">del</span><span style="color: #000000;"> message_queues[s]
+
+        </span><span style="color: #0000ff;">elif</span> flag &amp;<span style="color: #000000;"> select.POLLHUP:
+            </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">关闭</span><span style="color: #800000;">'</span>, client_address, <span style="color: #800000;">'</span><span style="color: #800000;">收到HUP后</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+            poller.unregister(s)
+            s.close()
+
+        </span><span style="color: #0000ff;">elif</span> flag &amp;<span style="color: #000000;"> select.POLLOUT:
+            </span><span style="color: #0000ff;">try</span><span style="color: #000000;">:
+                next_msg </span>=<span style="color: #000000;"> message_queues[s].get_nowait()
+            </span><span style="color: #0000ff;">except</span><span style="color: #000000;"> queue.Empty:
+                </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">队列</span><span style="color: #800000;">'</span>, s.getpeername(), <span style="color: #800000;">'</span><span style="color: #800000;">为空</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+                poller.modify(s, READ_ONLY)
+            </span><span style="color: #0000ff;">else</span><span style="color: #000000;">:
+                </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">发送 "%s" 到 %s</span><span style="color: #800000;">'</span> %<span style="color: #000000;"> (next_msg, s.getpeername()))
+                s.send(next_msg)
+
+        </span><span style="color: #0000ff;">elif</span> flag &amp;<span style="color: #000000;"> select.POLLERR:
+            </span><span style="color: #0000ff;">print</span>(sys.stderr, <span style="color: #800000;">'</span><span style="color: #800000;">异常信息:</span><span style="color: #800000;">'</span><span style="color: #000000;">, s.getpeername())
+            poller.unregister(s)
+            s.close()
+            </span><span style="color: #0000ff;">del</span> message_queues[s]</pre>
+</div>
+<p>client端：</p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">import</span><span style="color: #000000;"> socket
+
+
+client </span>=<span style="color: #000000;"> socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((</span><span style="color: #800000;">'</span><span style="color: #800000;">localhost</span><span style="color: #800000;">'</span>,8800<span style="color: #000000;">))
+
+</span><span style="color: #0000ff;">while</span><span style="color: #000000;"> True:
+    msg </span>= bytes(input(<span style="color: #800000;">"</span><span style="color: #800000;">&lt;&lt;&lt;</span><span style="color: #800000;">"</span>),encoding=<span style="color: #800000;">'</span><span style="color: #800000;">utf-8</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+    client.sendall(msg)
+
+    data </span>= client.recv(1024<span style="color: #000000;">)
+
+    </span><span style="color: #0000ff;">print</span>(<span style="color: #800000;">"</span><span style="color: #800000;">{}</span><span style="color: #800000;">"</span>.format(data))</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+<div id="MySignature"></div>
+<div class="clear"></div>
+<div id="blog_post_info_block">
+    <div id="blog_post_info"></div>
+    <div class="clear"></div>
+    <div id="post_next_prev"></div>
+</div>
+            </div>
+            <div class="postDesc">posted @ 
+<span id="post-date">2018-10-22 15:33</span>&nbsp;<a href="https://www.cnblogs.com/weihengblog/">短毛兔</a> 阅读(<span id="post_view_count">...</span>) 评论(<span id="post_comment_count">...</span>) <a href="https://i.cnblogs.com/EditPosts.aspx?postid=9830361" rel="nofollow"> 编辑</a> <a href="javascript:void(0)" onclick="AddToWz(9830361); return false;">收藏</a>
+</div>
+        </div>
+	    
+	    
+    </div><!--end: topics 文章、评论容器-->
+</div>
+<script src="https://common.cnblogs.com/highlight/9.12.0/highlight.min.js"></script>
+<script>markdown_highlight();</script>
+<script>
+    var allowComments = true, cb_blogId = 407721, cb_blogApp = 'weihengblog', cb_blogUserGuid = 'b68f1937-6ee7-474b-336b-08d54dba4453';
+    var cb_entryId = 9830361, cb_entryCreatedDate = '2018-10-22 15:33', cb_postType = 1; 
+    loadViewCount(cb_entryId);
+</script><a name="!comments"></a>
+<div id="blog-comments-placeholder"></div>
+<script>
+    var commentManager = new blogCommentManager();
+    commentManager.renderComments(0);
+</script>
+
+<div id="comment_form" class="commentform">
+    <a name="commentform"></a>
+    <div id="divCommentShow"></div>
+    <div id="comment_nav"><span id="span_refresh_tips"></span><a href="javascript:void(0);" onclick="return RefreshCommentList();" id="lnk_RefreshComments" runat="server" clientidmode="Static">刷新评论</a><a href="#" onclick="return RefreshPage();">刷新页面</a><a href="#top">返回顶部</a></div>
+    <div id="comment_form_container"></div>
+    <div class="ad_text_commentbox" id="ad_text_under_commentbox"></div>
+    <div id="ad_t2"></div>
+    <div id="opt_under_post"></div>
+    <script async="async" src="https://www.googletagservices.com/tag/js/gpt.js"></script>
+    <script>
+        var googletag = googletag || {};
+        googletag.cmd = googletag.cmd || [];
+    </script>
+    <script>
+        googletag.cmd.push(function () {
+            googletag.defineSlot("/1090369/C1", [300, 250], "div-gpt-ad-1546353474406-0").addService(googletag.pubads());
+            googletag.defineSlot("/1090369/C2", [468, 60], "div-gpt-ad-1539008685004-0").addService(googletag.pubads());
+            googletag.pubads().enableSingleRequest();
+            googletag.enableServices();
+        });
+    </script>
+    <div id="cnblogs_c1" class="c_ad_block">
+        <div id="div-gpt-ad-1546353474406-0" style="height:250px; width:300px;"></div>
+    </div>
+    <div id="under_post_news"></div>
+    <div id="cnblogs_c2" class="c_ad_block">
+        <div id="div-gpt-ad-1539008685004-0" style="height:60px; width:468px;">
+            <script>
+                if (new Date() >= new Date(2018, 9, 13)) {
+                    googletag.cmd.push(function () { googletag.display("div-gpt-ad-1539008685004-0"); });
+                }
+            </script>
+        </div>
+    </div>
+    <div id="under_post_kb"></div>
+    <div id="HistoryToday" class="c_ad_block"></div>
+    <script type="text/javascript">
+        fixPostBody();
+        setTimeout(function () { incrementViewCount(cb_entryId); }, 50);
+        deliverAdT2();
+        deliverAdC1();
+        deliverAdC2();
+        loadNewsAndKb();
+        loadBlogSignature();
+LoadPostCategoriesTags(cb_blogId, cb_entryId);        LoadPostInfoBlock(cb_blogId, cb_entryId, cb_blogApp, cb_blogUserGuid);
+        GetPrevNextPost(cb_entryId, cb_blogId, cb_entryCreatedDate, cb_postType);
+        loadOptUnderPost();
+        GetHistoryToday(cb_blogId, cb_blogApp, cb_entryCreatedDate);
+    </script>
+</div>
+	</div><!--end: forFlow -->
+	</div><!--end: mainContent 主体内容容器-->
+
+	<div id="sideBar">
+		<div id="sideBarMain">
+			
+<div id="sidebar_news" class="newsItem">
+            <script>loadBlogNews();</script>
+</div>
+
+			<div id="blog-calendar" style="display:none"></div><script>loadBlogDefaultCalendar();</script>
+			
+			<div id="leftcontentcontainer">
+				<div id="blog-sidecolumn"></div>
+                    <script>loadBlogSideColumn();</script>
+			</div>
+			
+		</div><!--end: sideBarMain -->
+	</div><!--end: sideBar 侧边栏容器 -->
+	<div class="clear"></div>
+	</div><!--end: main -->
+	<div class="clear"></div>
+	<div id="footer">
+		<!--done-->
+Copyright &copy; 2019 短毛兔
+<br /><span id="poweredby">Powered by .NET Core 3.0.0-preview9-19423-09 on Linux</span>
+
+
+
+	</div><!--end: footer -->
+</div><!--end: home 自定义的最大容器 -->
+
+
+    
+</body>
+</html>
